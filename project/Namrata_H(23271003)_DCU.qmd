@@ -1,0 +1,230 @@
+---
+title: "**Insights Unveiled for Global Dynamics in GDP, Population, Life, Defense and Education in 2020** "
+format: html
+execute:
+  echo: false
+  warning: false
+  message: false
+
+output:
+  html_document:
+    css: styles.css
+---
+<style>
+  body {
+    background-color: lightblue;
+    color: black;
+  }
+</style>
+
+
+```{r}
+#| label: setup
+#| include: false
+
+install.packages("tidyverse")
+library(tidyverse)
+
+install.packages("ggplot2")
+library(ggplot2)
+
+install.packages("maps")
+
+library(ggplot2)
+
+unicef_indicator_1 <- read.csv("/cloud/project/unicef_indicator_1.csv")
+unicef_metadata <- read.csv("/cloud/project/unicef_metadata.csv")
+
+merged_data <- merge(unicef_indicator_1, unicef_metadata, by = c("country", "Year"))
+
+ 
+```
+
+
+## **Global overview of the population**
+
+```{r}
+library(dplyr)
+library(ggmap)
+
+options(scipen = 999)
+
+# Filter data for the year 2020
+pop_2020 <- unicef_metadata %>% 
+  filter(Year == 2020)
+
+# Load world map data
+map_world <- map_data("world")
+
+# Join population data with map data
+map_pop_2020 <- full_join(map_world, pop_2020, by = c("region" = "country"))
+
+
+# Define breaks and labels for the population scale
+breaks <- c(0, 1e6, 2e6, 5e6, 1e7, 2e7, 5e7, 1e8)
+labels <- scales::comma(breaks)
+
+```
+
+```{r}
+library(dplyr)
+library(ggmap)
+
+options(scipen = 999)
+
+# Filter data for the year 2020
+pop_2020 <- unicef_metadata %>% 
+  filter(Year == 2020)
+
+# Load world map data
+map_world <- map_data("world")
+
+# Join population data with map data
+map_pop_2020 <- full_join(map_world, pop_2020, by = c("region" = "country"))
+
+# Define breaks and labels for the population scale
+breaks <- seq(0, max(breaks), length.out = length(breaks))
+labels <- scales::comma(breaks / 1e3)  # Display numbers in thousands (shorthand notation)
+labels <- gsub(",", "", labels)  # Remove commas from labels
+labels <- gsub("0(?=k$)", "", labels, perl = TRUE)  # Remove trailing zeroes before "k"
+
+# Plot world population distribution
+ggplot(data = map_pop_2020, aes(x = long, y = lat, group = group, fill = Pop)) +
+  geom_polygon(color = "black", size = 0.1) +  
+  scale_fill_viridis_c(name = "Population (in 000s)", na.value = "grey90", 
+                        breaks = breaks, labels = labels, limits = c(0, max(breaks))) +  
+  labs(title = "World Population Distribution (2020)") +  
+  theme_minimal() + 
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        legend.position = "bottom",  # Position legend at the bottom
+        legend.title = element_text(size = 12),  # Increase legend title size
+        legend.text = element_text(size = 10),  # Increase legend text size
+        legend.key.width = unit(2.5, "cm"),  # Increase legend key width for better display
+        axis.text.x = element_blank(), axis.text.y = element_blank(),  
+        axis.title.x = element_blank(), axis.title.y = element_blank())
+```
+#### This choropleth map (2020) depicts global demographic disparity. Deepest hues signify population megaliths exceeding 100 million, concentrated in Asia. Lighter colors represent regions with moderate populations (28.57-42.86 million), potentially highlighting areas of future growth.
+
+
+## **Growth and Gaps**
+
+####  This scatter plot visually explores the relationship between life expectancy and GDP per capita, while using color to represent potential differences based on education gap.
+```{r}
+merged_data_2015_to_2020 <- subset(merged_data, Year >= 2015 & Year <= 2020)
+
+ggplot(merged_data_2015_to_2020) +
+  aes(x = GDP, y = LifeExp, color = Observation) +
+  geom_point(size = 3, alpha = 0.7) +
+  scale_color_gradient(low = "blue", high = "red") +  
+  theme_minimal() +
+  labs(
+    title = "Life Expectancy vs GDP per Capita with Education Gap 
+
+    for 2015 to 2020",
+    x = "GDP per Capita",
+    y = "Life Expectancy",
+    color = "Education Gap"
+  ) +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 14),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+```
+#### The x-axis represents GDP per capita, and the y-axis represents life expectancy. Each data point is colored based on the education gap metric.
+
+
+## **GDP v/s Military Expenditure**
+
+```{r}
+library(ggplot2)
+
+merged_data_2015_to_2020 <- subset(merged_data, Year >= 2015 & Year <= 2020)
+
+ggplot(merged_data_2015_to_2020, aes(x = GDP, y = MilExp, color = MilExp)) +
+  geom_point(alpha = 0.5, size = 3) +  
+  geom_smooth(method = "lm", se = FALSE, color = "darkblue") +
+  scale_color_gradient(name = "Military Expenditure", low = "lightblue", high = "darkblue") +
+  labs(
+    x = "GDP per Capita (USD)",
+    y = "Military Expenditure",
+    title = "GDP per Capita vs Military Expenditure (2015-2020)"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = "bottom"
+  )
+```
+#### Across the years 2015 to 2020, countries exhibited diverse trends in the relationship between GDP and military expenditure, showcasing the intricate balance between national security investments and economic development objectives. Some nations prioritized bolstering defense capabilities amidst geopolitical uncertainties, while others pursued a more restrained approach, aligning military spending with broader economic strategies aimed at fostering sustainable growth and prosperity.
+
+
+## **GDP v/s Inflation**
+
+#### In 2020, a complex interplay between inflation and GDP growth characterized the economic landscapes of the top 50 countries, reflecting diverse policy responses and external factors shaping each nation's economic trajectory
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Assuming unicef_metadata contains necessary columns and data
+
+# Filter data for the year 2020
+unicef_metadata_2020 <- subset(unicef_metadata, Year == 2020)
+
+# Select top 50 countries with highest GDP in 2020
+top_50_countries_2020 <- unicef_metadata_2020 %>%
+  top_n(50, wt = GDP) %>%
+  arrange(desc(GDP))
+
+# Plot the line chart
+ggplot(data = top_50_countries_2020) +
+  aes(x = Inflation, y = GDP, color = Inflation) +
+  geom_line(size = 1, alpha = 0.8) +  
+  scale_color_gradient(name = "Inflation", low = "blue", high = "red") +  
+  labs(
+    x = "Inflation",
+    y = "GDP",
+    title = "Inflation vs GDP Trends (2020) - Top 50 Countries"
+  ) +
+  theme_minimal() +  
+  theme(
+    legend.position = "bottom"  
+  )
+```
+#### In 2020, the top 10 countries with the highest average GDP exemplified diverse economic landscapes, reflecting a blend of factors such as innovation, natural resource endowment, and robust infrastructure. These nations showcased resilience amid global challenges, leveraging their economic prowess to navigate uncertainties and drive growth, thereby influencing regional and global economic dynamics.
+```{r}
+# Assuming merged_data contains necessary columns and data
+
+# Calculate average GDP for each country in 2020
+merged_data_avg_country_2020 <- merged_data %>%
+  filter(Year == 2020) %>%
+  group_by(country) %>%
+  summarise(m_GDP = mean(GDP)) %>%
+  top_n(10, wt = m_GDP) %>%
+  arrange(desc(m_GDP))
+
+# Plot the bar chart with improved visualizations
+ggplot(data = merged_data_avg_country_2020, aes(x = reorder(country, m_GDP), y = m_GDP, fill = country)) +
+  geom_col(width = 0.7) +  # Adjust width of the bars
+  scale_fill_viridis_d(option = "plasma") +  # Use a viridis color palette
+  labs(
+    title = "Top 10 Countries with Highest Average GDP in 2020",
+    x = "Country",
+    y = "Average GDP (in USD)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 14),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"  # Remove the legend
+  )
+
+```
+
+#### **In conclusion, analyzing the economic indicators of inflation, GDP, and military expenditure and education across various countries from 2015 to 2020 reveals a nuanced picture of global economic dynamics and strategic priorities. While some nations demonstrated steady economic growth with prudent defense investments, others grappled with inflationary pressures amidst fluctuating GDP performances. This data underscores the intricate interplay between economic stability, national security concerns, and geopolitical realities, highlighting the diverse strategies adopted by countries to navigate evolving challenges and capitalize on opportunities for sustainable development.**
+
+
+
+
